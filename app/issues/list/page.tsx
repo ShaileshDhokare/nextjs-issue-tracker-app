@@ -4,10 +4,14 @@ import { IssueStatusBadge, Link } from '../../components';
 import IssueActions from './IssueActions';
 import { Issue, Status } from '@prisma/client';
 import NextLink from 'next/link';
-import { ArrowUpIcon } from '@radix-ui/react-icons';
+import { ArrowDownIcon, ArrowUpIcon } from '@radix-ui/react-icons';
 
 type Props = {
-  searchParams: { status: Status; orderBy: keyof Issue };
+  searchParams: {
+    status: Status;
+    orderBy: keyof Issue;
+    orderDir: 'asc' | 'desc';
+  };
 };
 
 const IssuesPage = async ({ searchParams }: Props) => {
@@ -21,11 +25,45 @@ const IssuesPage = async ({ searchParams }: Props) => {
     ? searchParams.status
     : undefined;
 
+  const orderBy = columns.map((col) => col.value).includes(searchParams.orderBy)
+    ? {
+        [searchParams.orderBy]: ['asc', 'desc'].includes(searchParams.orderDir)
+          ? searchParams.orderDir
+          : 'asc',
+      }
+    : undefined;
   const issues = await prisma.issue.findMany({
     where: {
       status,
     },
+    orderBy,
   });
+
+  const getSortQueryParams = (columnName: string) => {
+    let orderDir = 'asc';
+    if (
+      searchParams.orderBy === columnName &&
+      searchParams.orderDir === 'asc'
+    ) {
+      orderDir = 'desc';
+    }
+    return {
+      orderBy: columnName,
+      orderDir,
+    };
+  };
+
+  const getSortIcon = (columnName: string) => {
+    if (columnName === searchParams.orderBy) {
+      if (searchParams.orderDir === 'asc') {
+        return <ArrowUpIcon className='inline' />;
+      }
+      if (searchParams.orderDir === 'desc') {
+        return <ArrowDownIcon className='inline' />;
+      }
+    }
+    return null;
+  };
 
   return (
     <div>
@@ -40,15 +78,15 @@ const IssuesPage = async ({ searchParams }: Props) => {
               >
                 <NextLink
                   href={{
-                    query: { ...searchParams, orderBy: column.value },
+                    query: {
+                      ...searchParams,
+                      ...getSortQueryParams(column.value),
+                    },
                   }}
                 >
                   {column.label}
                 </NextLink>
-                {column.value === searchParams.orderBy && (
-                  <ArrowUpIcon className='inline' />
-                )}
-                {/* <ArrowUpIcon /> */}
+                {getSortIcon(column.value)}
               </Table.ColumnHeaderCell>
             ))}
           </Table.Row>
