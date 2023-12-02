@@ -29,7 +29,7 @@ const Pagination = ({ itemCount, currentPage, pageSize }: Props) => {
   };
 
   return (
-    <Flex>
+    <Flex align='center' gap='2'>
       <Text>
         Page {currentPage} of {pageCount}
       </Text>
